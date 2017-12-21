@@ -1,4 +1,4 @@
-﻿﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -182,7 +182,8 @@ namespace MerlesAdventure
 				defence = 1;
 				speed = 1;
 				weapon = wep;//TODO assign from creation using weaponData. like in this example
-				//TODO create debug tool for finding weapon index
+				//TODO create debug tool for finding weapon index (that is if thats how i plan to
+				//assign weapons/items
 
 				TalkHello = "Oh hello Merle";
 				TalkOp0 = "Morning " + name + "!";
@@ -270,6 +271,7 @@ namespace MerlesAdventure
 			public InventoryContainer(string nm,int sz,int xx,int yy,int intmap) {
 				//constructor
 				name = nm;
+				type = "cont";
 				size = sz;
 				x = xx;
 				y = yy;
@@ -337,7 +339,7 @@ namespace MerlesAdventure
 			void loadInMaps(){
 				for(int x = 0;x <= manyMaps-1;x++)
 				{
-					string loc = "/home/pc/CS/Test/TestCs/Maps/Map" + System.Convert.ToString (x);
+					string loc = "/home/pc/CS/MerleProject/MerlesAdventure/Maps/Map" + System.Convert.ToString (x);
 					string fileContents = System.IO.File.ReadAllText(loc);
 					fileContents = fileContents.Replace(System.Environment.NewLine, ""); //removes NL
 

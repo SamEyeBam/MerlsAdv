@@ -103,6 +103,7 @@ namespace MerlesAdventure
 			public string weapon;
 			public bool battle = false;
 			public InventorySlot[] slot;
+			public int size;
 			public virtual void Talk(){
 			}
 			public virtual void Enter(cPlayer p){
@@ -263,10 +264,24 @@ namespace MerlesAdventure
 			}
 		}
 
+		public class Item {
+			public string name = "";
+			public string type = "";
+			public bool stackable = false;
+//			public int quantity = 0;
+
+			public Item(string nm, string tpe, bool stck){
+				name = nm;
+				type = tpe;
+				stackable = stck;
+			}
+
+		}
+
 		public class InventoryContainer : objectParent {
 
 			//public string name;
-			public int size;
+			//public int size;
 			//public InventorySlot[] slot;
 			public InventoryContainer(string nm,int sz,int xx,int yy,int intmap) {
 				//constructor
@@ -285,16 +300,16 @@ namespace MerlesAdventure
 				//TODO inventory slots need to be able to contain items plus weapons
 			}
 
-			//			public class InventorySlot{
-			//				public string type = "";
-			//				public bool stackable = false;
-			//				public string name = "";
-			//				public int quantity = 0;
+			//	public class InventorySlot{
+			//		public string name = "";
+			//		public string type = "";
+			//		public bool stackable = false;
+			//		public int quantity = 0;
 			//
-			//				public InventorySlot(){
-			//					//Console.WriteLine(this.name);
-			//				}
-			//			}
+			//		public InventorySlot(){
+			//			//Console.WriteLine(this.name);
+			//		}
+			//	}
 
 		}
 
@@ -302,13 +317,21 @@ namespace MerlesAdventure
 		public static void Main (string[] args)
 		{
 			//-------------START----------------//
-			int objSize = 7; //manual set
+			int objSize = 9; //manual set TODO change to objArray.Count;
 			//Random rnd = new Random();
 			List<Weapon> weaponData = new List<Weapon>();
 			weaponData.Add (new Weapon ("hands", 1, 2));
 			weaponData.Add (new Weapon ("keyboard", 2, 4));
 			weaponData.Add (new Weapon ("spoon", 1, 3));
 			weaponData.Add (new Weapon ("vape", 2, 2));
+
+			List<Item> itemData = new List<Item>();
+			itemData.Add (new Item ("hands","wep",false));
+			itemData.Add (new Item ("keyboard", "wep", false));
+			itemData.Add (new Item ("spoon", "wep", false));
+			itemData.Add (new Item ("vape", "wep", false));
+			itemData.Add (new Item ("Paper", "itm", true));
+			itemData.Add (new Item ("Feather", "itm", true));
 
 			List<objectParent> objArray = new List<objectParent>();
 			//objectBen objBen = new objectBen();
@@ -321,8 +344,8 @@ namespace MerlesAdventure
 			objArray.Add(new objDoor(4,3,3,7,4,4));
 			objArray.Add(new objDoor(5,3,3,7,4,4));
 			objArray.Add(new objDoor(7,3,4,5,3,2));
-
-			objArray.Add(new InventoryContainer("testInv",5,0,0,0));
+			objArray.Add(new InventoryContainer("Inventory",10,0,0,0));
+			objArray.Add(new InventoryContainer("testInv",5,1,3,3));
 
 
 			cPlayer Player = new cPlayer("Merle"); //creates player
@@ -395,6 +418,9 @@ namespace MerlesAdventure
 							else if (objArray[j].type == "door") {
 								objArray[j].Enter(Player);
 								displayMap(currentMap);
+							}
+							else if (objArray[j].type == "cont") {
+								ContainerUI(j);
 							}
 						}
 					}
@@ -537,8 +563,8 @@ namespace MerlesAdventure
 				void usrInput(){
 					Console.SetCursorPosition(0,disy+4);
 					Console.WriteLine("[0]Attack");
-					Console.WriteLine("[1]Block");
-					Console.WriteLine("[2]Potion");
+					Console.WriteLine("[1]Block"); //TODO
+					Console.WriteLine("[2]Potion"); //TODO
 					Console.Write("> ");
 					string input = Console.ReadLine();
 					clearMid(disy,disy+3); //battle narration
@@ -569,23 +595,187 @@ namespace MerlesAdventure
 
 			}
 
+			void ContainerItemAdd(int C, string itemNm, int amt = 1){
+				//C = container (if 666 then player), itemId reference item database, amt = quantity 1 being default
+				for (int i = 0; i < objArray[C].size; i++){
+					if (objArray[C].slot[i].name == "") {
+
+						int itemId = itemData.FindIndex(item => item.name == itemNm);
+
+						objArray[C].slot[i].name = itemData[itemId].name;
+						objArray[C].slot[i].type = itemData[itemId].type;
+						objArray[C].slot[i].stackable = itemData[itemId].stackable;
+						objArray[C].slot[i].quantity = amt;
+
+						break;
+					}
+
+				}
+
+			}
+			void ContainerItemDestroy(int C, int ind){
+				//C = container (666 for player),ind = index of container
+				objArray[C].slot[ind].name = "";
+				objArray[C].slot[ind].type = "";
+				objArray[C].slot[ind].stackable = false;
+				objArray[C].slot[ind].quantity = 0;
+			}
+			void ContainerDisplay(int C){
+				//C = container
+				//Console.Clear();
+				for (int i = 0; i < objArray[C].size; i++) {
+					Console.Write("[{0}] {1}",i+1,objArray[C].slot[i].name);
+
+					if (objArray[C].slot[i].stackable == true){
+						Console.Write(" ({0})", objArray[C].slot[i].quantity);
+					}
+					Console.WriteLine("");
+
+				}
+			}
+			void ContainerSort(int C){
+				//C = container
+				void Swap(int fst, int snd){
+					//name
+					tempString = objArray[C].slot[fst].name;
+					objArray[C].slot[fst].name = objArray[C].slot[snd].name;
+					objArray[C].slot[snd].name = tempString;
+					//type
+					tempString = objArray[C].slot[fst].type;
+					objArray[C].slot[fst].type = objArray[C].slot[snd].type;
+					objArray[C].slot[snd].type = tempString;
+					//stackable
+					tempBool = objArray[C].slot[fst].stackable;
+					objArray[C].slot[fst].stackable = objArray[C].slot[snd].stackable;
+					objArray[C].slot[snd].stackable = tempBool;
+					//quantity
+					tempInt = objArray[C].slot[fst].quantity;
+					objArray[C].slot[fst].quantity = objArray[C].slot[snd].quantity;
+					objArray[C].slot[snd].quantity = tempInt;
+				}
+					
+				for (int j = 0;j < objArray[C].size; j++){
+					for (int i = 0;i < objArray[C].size - 1; i++){
+						if (objArray[C].slot[i].name == ""){
+							Swap(i,i+1);
+						}
+					}
+				}
+			
+			}
+			void ContainerItemTransfer(bool T, int C, int fromInd){
+				//T = true if from player inv to container, C = container, fromInd = index
+				int otherC;
+				if (T == true) {
+					otherC = C;
+					C = objArray.FindIndex(item => item.name == "Inventory");
+				}
+				else {
+					otherC = objArray.FindIndex(item => item.name == "Inventory");
+				}
+
+				if ((fromInd >= 0) 
+				&& (fromInd < objArray[C].size)
+				&& (objArray[C].slot[fromInd].name != "")){
+					for (int i = 0;i < objArray[otherC].size; i++){
+						if (objArray[otherC].slot[i].name == ""){
+							string itemNm = objArray[C].slot[fromInd].name;
+							int itemAmt = objArray[C].slot[fromInd].quantity;
+							ContainerItemAdd(otherC,itemNm,itemAmt);
+							ContainerItemDestroy(C,fromInd);
+							ContainerSort(C);
+							break;
+						}
+					}
+				}
+			
+			}
+
+			void ItemSwitch(){
+			}
+
+			void ContainerUI(int Cont){
+				bool done = false;
+				int userInvInd = objArray.FindIndex(item => item.name == "Inventory");
+				void Draw(){
+					Console.WriteLine(objArray[Cont].name);
+					ContainerDisplay(Cont);
+					Console.WriteLine("");
+
+					Console.WriteLine(objArray[userInvInd].name);
+					ContainerDisplay(userInvInd);
+					Console.WriteLine("");
+				}
+
+				void usrInput(){
+					Console.WriteLine("[0]Take");
+					Console.WriteLine("[1]Put In");
+					Console.WriteLine("[2]Destroy");
+					Console.WriteLine("[3]Leave");
+					Console.WriteLine("[4]Switch (?)");
+					Console.Write("> ");
+					string input = Console.ReadLine();
+					switch(input) {
+					case "0":
+						{
+							Console.Write("slot> ");
+							string tempInput = Console.ReadLine();
+							tempBool = Int32.TryParse(tempInput, out tempInt);
+							if (tempBool == true){
+								ContainerItemTransfer(false,Cont,tempInt-1);
+							}
+							break;
+						}
+					case "1":
+						{
+							Console.Write("slot> ");
+							string tempInput = Console.ReadLine();
+							tempBool = Int32.TryParse(tempInput, out tempInt);
+							if (tempBool == true){
+								ContainerItemTransfer(true,Cont,tempInt-1);
+							}
+							break;
+						}
+					case "2":
+						{
+
+							break;
+						}
+					case "3":
+						{
+							done = true;
+							break;
+						}
+					default:
+						{
+							Console.WriteLine("Unknown Command");
+							break;
+						}
+					}
+				}
+
+				while (!done){
+					Console.Clear();
+					Draw();
+					usrInput();
+				}
+
+			}
+
 			void TestRoom(){
 				Console.Clear();
 				//				InventoryContainer testInv = new InventoryContainer("testInv",5,0,0,0);
 				//				testInv.slot[0].name = "Paper";
-				objArray[7].slot[0].name = "Paper";
-				Console.WriteLine(objArray[7].slot[0].name);
-				//				Console.WriteLine(testInv.slot[1].name);
-				//				Console.WriteLine(testInv.slot[2].name);
-				//				Console.WriteLine(testInv.slot[3].name);
-				//				Console.WriteLine(testInv.slot[4].name);
 
-
-
-				//				int wepDm;
-				//				wepDm = weaponData.First(item => item.name == Player.weapon).Damage();
-				//				Console.WriteLine(wepDm);
-
+				int tempInt9 = objArray.FindIndex(item => item.name == "testInv");
+				ContainerItemAdd(tempInt9,"vape");
+				ContainerItemAdd(tempInt9,"hands");
+				ContainerItemAdd(tempInt9,"Paper", 4);
+				ContainerItemAdd(tempInt9,"Feather", 7);
+				ContainerItemAdd(tempInt9,"spoon");
+				ContainerItemDestroy(tempInt9,0);
+				ContainerSort(tempInt9);
+				ContainerDisplay(tempInt9);
 
 			}
 

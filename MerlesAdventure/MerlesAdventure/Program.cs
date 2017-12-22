@@ -104,6 +104,7 @@ namespace MerlesAdventure
 			public bool battle = false;
 			public InventorySlot[] slot;
 			public int size;
+			//public string description;
 			public virtual void Talk(){
 			}
 			public virtual void Enter(cPlayer p){
@@ -113,6 +114,7 @@ namespace MerlesAdventure
 				public bool stackable = false;
 				public string name = "";
 				public int quantity = 0;
+				public string description;
 
 				public InventorySlot(){
 					//Console.WriteLine(this.name);
@@ -253,6 +255,7 @@ namespace MerlesAdventure
 			public string type = "wep";
 			public int minDmg;
 			public int maxDmg;
+			//public string description = "";
 
 			public Weapon(string nm, int minD, int maxD){
 				name = nm;
@@ -268,12 +271,14 @@ namespace MerlesAdventure
 			public string name = "";
 			public string type = "";
 			public bool stackable = false;
+			public string description = "";
 //			public int quantity = 0;
 
-			public Item(string nm, string tpe, bool stck){
+			public Item(string nm, string tpe, bool stck, string desc){
 				name = nm;
 				type = tpe;
 				stackable = stck;
+				description = desc;
 			}
 
 		}
@@ -326,12 +331,12 @@ namespace MerlesAdventure
 			weaponData.Add (new Weapon ("vape", 2, 2));
 
 			List<Item> itemData = new List<Item>();
-			itemData.Add (new Item ("hands","wep",false));
-			itemData.Add (new Item ("keyboard", "wep", false));
-			itemData.Add (new Item ("spoon", "wep", false));
-			itemData.Add (new Item ("vape", "wep", false));
-			itemData.Add (new Item ("Paper", "itm", true));
-			itemData.Add (new Item ("Feather", "itm", true));
+			itemData.Add (new Item ("hands","wep",false, "These are hands"));
+			itemData.Add (new Item ("keyboard", "wep", false, "The keyboard has jizz in it"));
+			itemData.Add (new Item ("spoon", "wep", false, "Just a silver spoon"));
+			itemData.Add (new Item ("vape", "wep", false, "Mad vape brahh"));
+			itemData.Add (new Item ("Paper", "itm", true, "Just blank paper"));
+			itemData.Add (new Item ("Feather", "itm", true,"Feather from some dead bird"));
 
 			List<objectParent> objArray = new List<objectParent>();
 			//objectBen objBen = new objectBen();
@@ -606,6 +611,7 @@ namespace MerlesAdventure
 						objArray[C].slot[i].type = itemData[itemId].type;
 						objArray[C].slot[i].stackable = itemData[itemId].stackable;
 						objArray[C].slot[i].quantity = amt;
+						objArray[C].slot[i].description = itemData[itemId].description;
 
 						break;
 					}
@@ -619,6 +625,7 @@ namespace MerlesAdventure
 				objArray[C].slot[ind].type = "";
 				objArray[C].slot[ind].stackable = false;
 				objArray[C].slot[ind].quantity = 0;
+				objArray[C].slot[ind].description = "";
 			}
 			void ContainerDisplay(int C){
 				//C = container
@@ -652,6 +659,10 @@ namespace MerlesAdventure
 					tempInt = objArray[C].slot[fst].quantity;
 					objArray[C].slot[fst].quantity = objArray[C].slot[snd].quantity;
 					objArray[C].slot[snd].quantity = tempInt;
+					//description
+					tempString = objArray[C].slot[fst].description;
+					objArray[C].slot[fst].description = objArray[C].slot[snd].description;
+					objArray[C].slot[snd].description = tempString;
 				}
 					
 				for (int j = 0;j < objArray[C].size; j++){
@@ -689,6 +700,11 @@ namespace MerlesAdventure
 					}
 				}
 			
+			}
+
+			string ContainerItemInspect(int C,int ind){
+				Console.WriteLine("[{0}] {1}", objArray[C].slot[ind].name, objArray[C].slot[ind].description);
+				return objArray[C].slot[ind].description;
 			}
 
 			void ItemSwitch(){
@@ -744,6 +760,8 @@ namespace MerlesAdventure
 					case "3":
 						{
 							done = true;
+							Console.Clear();
+							displayMap(currentMap);
 							break;
 						}
 					default:
@@ -776,10 +794,12 @@ namespace MerlesAdventure
 				ContainerItemDestroy(tempInt9,0);
 				ContainerSort(tempInt9);
 				ContainerDisplay(tempInt9);
+				ContainerItemInspect(tempInt9,0);
+				Console.WriteLine(objArray[tempInt9].slot[0].description);
 
 			}
 
-			void userInput(){ //TODO fix bug for if input les then .length of 2
+			void userInput(){ //TODO fix bug for if input less then .length of 2
 				Console.WriteLine("");
 				Console.Write("> ");
 				string input = Console.ReadLine();
@@ -866,12 +886,9 @@ namespace MerlesAdventure
 				case "display inventory":
 				case "inventory":
 					{
-						Player.disInventory();
-						break;
-					}
-				case "nothing this is a test":
-					{
-						Console.WriteLine("Test Yeeee");
+						Console.Clear();
+						Console.WriteLine("Inventory");
+						ContainerDisplay(objArray.FindIndex(item => item.name == "Inventory"));
 						break;
 					}
 				case "": //change

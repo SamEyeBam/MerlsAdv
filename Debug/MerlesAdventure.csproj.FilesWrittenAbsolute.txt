@@ -1,0 +1,5 @@
+/home/pc/CS/MerleProject/MerlesAdventure/MerlesAdventure/obj/x86/Debug/.NETFramework,Version=v4.5.AssemblyAttribute.cs
+/home/pc/CS/MerleProject/MerlesAdventure/MerlesAdventure/bin/Debug/MerlesAdventure.pdb
+/home/pc/CS/MerleProject/MerlesAdventure/MerlesAdventure/bin/Debug/MerlesAdventure.exe
+/home/pc/CS/MerleProject/MerlesAdventure/MerlesAdventure/obj/x86/Debug/MerlesAdventure.exe
+/home/pc/CS/MerleProject/MerlesAdventure/MerlesAdventure/obj/x86/Debug/MerlesAdventure.pdb

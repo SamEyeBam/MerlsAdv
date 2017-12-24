@@ -21,6 +21,8 @@ namespace MerlesAdventure
 			//public string name;
 			public int playerx = 5;
 			public int playery = 2;
+			public int level = 1;
+			public int exp = 0;
 			public string[] inventory = new string[10];
 
 
@@ -102,8 +104,10 @@ namespace MerlesAdventure
 			public int speed;
 			public string weapon;
 			public bool battle = false;
+			public int expGive;
 			public InventorySlot[] slot;
 			public int size;
+			public bool locked;
 			//public string description;
 			public virtual void Talk(){
 			}
@@ -184,6 +188,7 @@ namespace MerlesAdventure
 				attack = 1;
 				defence = 1;
 				speed = 1;
+				expGive = 5;
 				weapon = wep;//TODO assign from creation using weaponData. like in this example
 				//TODO create debug tool for finding weapon index (that is if thats how i plan to
 				//assign weapons/items
@@ -211,6 +216,7 @@ namespace MerlesAdventure
 				attack = 2;
 				defence = 2;
 				speed = 3;
+				expGive = 8;
 				weapon = "vape";
 
 				TalkHello = "Morning Merle!";
@@ -232,7 +238,7 @@ namespace MerlesAdventure
 			public int toy;
 			public int tomap;
 
-			public objDoor(int intx, int inty, int intmap, int inttox, int inttoy, int inttomap){
+			public objDoor(int intx, int inty, int intmap, int inttox, int inttoy, int inttomap, bool lkd = false){
 				type = "door";
 				x = intx;
 				y = inty;
@@ -240,6 +246,7 @@ namespace MerlesAdventure
 				tox = inttox;
 				toy = inttoy;
 				tomap = inttomap;
+				locked = lkd;
 			}
 			public override void Enter(cPlayer p){
 				Maps[currentMap][p.playerx, p.playery] = ".";
@@ -287,8 +294,9 @@ namespace MerlesAdventure
 
 			//public string name;
 			//public int size;
+			//public bool locked;
 			//public InventorySlot[] slot;
-			public InventoryContainer(string nm,int sz,int xx,int yy,int intmap) {
+			public InventoryContainer(string nm,int sz,int xx,int yy,int intmap,bool lkd = false) {
 				//constructor
 				name = nm;
 				type = "cont";
@@ -296,13 +304,13 @@ namespace MerlesAdventure
 				x = xx;
 				y = yy;
 				map = intmap;
+				locked = lkd;
 
 
 				slot = new InventorySlot[size]; 
 				for (int i=0;i<size;i++){
 					slot[i] = new InventorySlot();
 				}
-				//TODO inventory slots need to be able to contain items plus weapons
 			}
 
 			//	public class InventorySlot{
@@ -365,9 +373,11 @@ namespace MerlesAdventure
 
 			//Load in map files to Maps[][,] array
 			void loadInMaps(){
+				string location = "/home/pc/CS/MerleProject/MerlesAdventure/Maps";
+				//location = Console.ReadLine();
 				for(int x = 0;x <= manyMaps-1;x++)
 				{
-					string loc = "/home/pc/CS/MerleProject/MerlesAdventure/Maps/Map" + System.Convert.ToString (x);
+					string loc = location + "/Map" + System.Convert.ToString (x);
 					string fileContents = System.IO.File.ReadAllText(loc);
 					fileContents = fileContents.Replace(System.Environment.NewLine, ""); //removes NL
 
@@ -398,12 +408,29 @@ namespace MerlesAdventure
 					}
 					Console.WriteLine("");
 				}
+				//health
 				Console.SetCursorPosition(mapSizes[x,0],0);
-				Console.Write(" Hth:[{0},{1}]", Player.health,Player.mhealth);
+				Console.Write(" Hth:[{0}/{1}]", Player.health,Player.mhealth);
+				//level
 				Console.SetCursorPosition(mapSizes[x,0],1);
-				Console.Write(" Wep:[{0}]", Player.weapon);
+				Console.Write(" Lvl:{0}[0/5]", Player.level);
+				//attack
 				Console.SetCursorPosition(mapSizes[x,0],2);
+				var wepTmp = weaponData.First(item => item.name == Player.weapon);
+				Console.Write(" Atk:{0}+[{1}-{2}]",Player.attack,wepTmp.minDmg,wepTmp.maxDmg); //TODO
+				//defence
+				Console.SetCursorPosition(mapSizes[x,0],3);
+				Console.Write(" Def:{0}", Player.defence);
+				//speed
+				Console.SetCursorPosition(mapSizes[x,0],4);
+				Console.Write(" Spd:{0}", Player.speed);
+				//weapon
+				Console.SetCursorPosition(mapSizes[x,0],5);
+				Console.Write(" Wep:[{0}]", Player.weapon);
+				//x,y
+				Console.SetCursorPosition(mapSizes[x,0],6);
 				Console.Write(" Pos:[{0},{1}]", Player.playerx,Player.playery);
+				//set x,y under map
 				Console.SetCursorPosition(0,mapSizes[x,1]);
 			}
 
@@ -430,6 +457,10 @@ namespace MerlesAdventure
 						}
 					}
 				}
+			}
+
+			void ckLevelUp(){ //TODO
+
 			}
 
 			void Battle(int j){
@@ -509,8 +540,9 @@ namespace MerlesAdventure
 						if (canAttack == true){
 							int wepDm = weaponData.First(item => item.name == Person[l].weapon).Damage();
 							int totalDamage = Person[0+l].attack + wepDm - Person[1-l].defence; //damage equasion
-							Person[1-l].health -= totalDamage; //TODO if defence is high enough, damage adds health
-
+							if (totalDamage >= 0){ //untested Done
+								Person[1-l].health -= totalDamage; //TODO if defence is high enough, damage adds health
+							}
 							draw();
 							Console.SetCursorPosition(0,disy+1+t);
 							Console.WriteLine("[{0}]Hit {1} with [{2}] for {3} damage",
@@ -601,9 +633,15 @@ namespace MerlesAdventure
 			}
 
 			void ContainerItemAdd(int C, string itemNm, int amt = 1){
-				//C = container (if 666 then player), itemId reference item database, amt = quantity 1 being default
+				//C = container, itemNm reference item database, amt = quantity
 				for (int i = 0; i < objArray[C].size; i++){
-					if (objArray[C].slot[i].name == "") {
+					if ((objArray[C].slot[i].name == itemNm)
+					&&(objArray[C].slot[i].stackable == true)){ //if you already have the item
+
+						objArray[C].slot[i].quantity += amt;
+						break;
+					}
+					else if (objArray[C].slot[i].name == "") {
 
 						int itemId = itemData.FindIndex(item => item.name == itemNm);
 
@@ -677,7 +715,7 @@ namespace MerlesAdventure
 			void ContainerItemTransfer(bool T, int C, int fromInd){
 				//T = true if from player inv to container, C = container, fromInd = index
 				int otherC;
-				if (T == true) {
+				if (T == true) { //orentates which C is main and which is other
 					otherC = C;
 					C = objArray.FindIndex(item => item.name == "Inventory");
 				}
@@ -687,14 +725,14 @@ namespace MerlesAdventure
 
 				if ((fromInd >= 0) 
 				&& (fromInd < objArray[C].size)
-				&& (objArray[C].slot[fromInd].name != "")){
-					for (int i = 0;i < objArray[otherC].size; i++){
-						if (objArray[otherC].slot[i].name == ""){
-							string itemNm = objArray[C].slot[fromInd].name;
-							int itemAmt = objArray[C].slot[fromInd].quantity;
-							ContainerItemAdd(otherC,itemNm,itemAmt);
-							ContainerItemDestroy(C,fromInd);
-							ContainerSort(C);
+				&& (objArray[C].slot[fromInd].name != "")){ //removes user error and cant transfer nothing
+					for (int i = 0;i < objArray[otherC].size; i++){ //search through each slot for free space
+						if (objArray[otherC].slot[i].name == ""){ //if its free
+							string itemNm = objArray[C].slot[fromInd].name; //name and quantity needed for
+							int itemAmt = objArray[C].slot[fromInd].quantity;//item add
+							ContainerItemAdd(otherC,itemNm,itemAmt); //adds item to container
+							ContainerItemDestroy(C,fromInd); //removes item form org cont
+							ContainerSort(C); //sorts cont after item removed
 							break;
 						}
 					}
@@ -703,11 +741,112 @@ namespace MerlesAdventure
 			}
 
 			string ContainerItemInspect(int C,int ind){
-				Console.WriteLine("[{0}] {1}", objArray[C].slot[ind].name, objArray[C].slot[ind].description);
-				return objArray[C].slot[ind].description;
+				if ((ind >= 0) && (ind < objArray[C].size)) {
+					Console.WriteLine("[{0}] {1}", objArray[C].slot[ind].name, objArray[C].slot[ind].description);
+					return objArray[C].slot[ind].description;
+				}
+				else{
+					return "";
+				}
 			}
 
 			void ItemSwitch(){
+			}
+
+			void ItemEquipt(string wep, int ind){
+				tempInt = itemData.FindIndex(item => item.name == wep); //finds item index of weapon
+				if ((ind >= 0)&&(tempInt >= 0)&&(itemData[tempInt].type == "wep")){
+					int userInvInd = objArray.FindIndex(item => item.name == "Inventory");
+					//store user weapon name temp
+					tempString = Player.weapon;
+					//equipt item
+					Player.weapon = wep;
+					//destroy inventory slot
+					ContainerItemDestroy(userInvInd,ind);
+					//add item of weapon temp
+					ContainerItemAdd(userInvInd,tempString);
+				}
+			}
+
+			void InventoryUI(){
+				bool done = false;
+				int userInvInd = objArray.FindIndex(item => item.name == "Inventory");
+				void Draw(){
+					Console.WriteLine(objArray[userInvInd].name);
+					ContainerDisplay(userInvInd);
+					Console.WriteLine("");
+				}
+
+				void usrInput(){
+//					Console.WriteLine("");
+//					Console.WriteLine("");
+//					Console.WriteLine("");
+					Console.WriteLine("[0]Inspect");
+					Console.WriteLine("[1]Equipt");
+					Console.WriteLine("[2]Destroy");
+					Console.WriteLine("[3]Leave");
+					Console.Write("> ");
+					string input = Console.ReadLine();
+					switch(input) {
+					case "0":
+						{
+							Console.Write("slot> ");
+							string tempInput = Console.ReadLine();
+							tempBool = Int32.TryParse(tempInput, out tempInt);
+							if (tempBool == true){
+								tempInt -= 1;
+//								Console.SetCursorPosition(0,12);
+								ContainerItemInspect(userInvInd,tempInt);
+//								Console.SetCursorPosition(0,16);
+								Console.ReadLine();
+
+							}
+							break;
+						}
+					case "1":
+						{
+							Console.Write("slot> ");
+							string tempInput = Console.ReadLine();
+							tempBool = Int32.TryParse(tempInput, out tempInt);
+							if (tempBool == true){
+								tempInt -= 1;
+								tempString = objArray[userInvInd].slot[tempInt].name;
+								ItemEquipt(tempString,tempInt);
+							}
+							break;
+						}
+					case "2":
+						{
+							Console.Write("slot> ");
+							string tempInput = Console.ReadLine();
+							tempBool = Int32.TryParse(tempInput, out tempInt);
+							if (tempBool == true){
+								tempInt -= 1;
+								ContainerItemDestroy(userInvInd,tempInt);
+							}
+							break;
+						}
+					case "3":
+						{
+							done = true;
+							Console.Clear();
+							displayMap(currentMap);
+							break;
+						}
+					default:
+						{
+							Console.WriteLine("Unknown Command");
+							break;
+						}
+					}
+				}
+
+				while (!done){
+					Console.Clear();
+					Draw();
+					usrInput();
+				}
+
 			}
 
 			void ContainerUI(int Cont){
@@ -738,7 +877,8 @@ namespace MerlesAdventure
 							string tempInput = Console.ReadLine();
 							tempBool = Int32.TryParse(tempInput, out tempInt);
 							if (tempBool == true){
-								ContainerItemTransfer(false,Cont,tempInt-1);
+								tempInt -= 1;
+								ContainerItemTransfer(false,Cont,tempInt);
 							}
 							break;
 						}
@@ -748,13 +888,20 @@ namespace MerlesAdventure
 							string tempInput = Console.ReadLine();
 							tempBool = Int32.TryParse(tempInput, out tempInt);
 							if (tempBool == true){
-								ContainerItemTransfer(true,Cont,tempInt-1);
+								tempInt -= 1;
+								ContainerItemTransfer(true,Cont,tempInt);
 							}
 							break;
 						}
 					case "2":
 						{
-
+							Console.Write("slot> ");
+							string tempInput = Console.ReadLine();
+							tempBool = Int32.TryParse(tempInput, out tempInt);
+							tempInt -= 1;
+							if (tempBool == true){
+								ContainerItemDestroy(Cont,tempInt);
+							}
 							break;
 						}
 					case "3":
@@ -786,10 +933,13 @@ namespace MerlesAdventure
 				//				testInv.slot[0].name = "Paper";
 
 				int tempInt9 = objArray.FindIndex(item => item.name == "testInv");
+				int tempInt7 = objArray.FindIndex(item => item.name == "Inventory");
 				ContainerItemAdd(tempInt9,"vape");
 				ContainerItemAdd(tempInt9,"hands");
 				ContainerItemAdd(tempInt9,"Paper", 4);
-				ContainerItemAdd(tempInt9,"Feather", 7);
+				ContainerItemAdd(tempInt9,"Feather", 3);
+				ContainerItemAdd(tempInt9,"Feather", 4);
+				ContainerItemAdd(tempInt7,"Feather", 3);
 				ContainerItemAdd(tempInt9,"spoon");
 				ContainerItemDestroy(tempInt9,0);
 				ContainerSort(tempInt9);
@@ -804,6 +954,7 @@ namespace MerlesAdventure
 				Console.Write("> ");
 				string input = Console.ReadLine();
 				input.ToLower(); //formats input
+				Console.WriteLine(input.Length);
 
 				switch (input) {
 				case "show letter":
@@ -886,9 +1037,7 @@ namespace MerlesAdventure
 				case "display inventory":
 				case "inventory":
 					{
-						Console.Clear();
-						Console.WriteLine("Inventory");
-						ContainerDisplay(objArray.FindIndex(item => item.name == "Inventory"));
+						InventoryUI();
 						break;
 					}
 				case "": //change
@@ -907,11 +1056,12 @@ namespace MerlesAdventure
 								Console.WriteLine("That map doesnt exist");
 							} 
 						}
-						else if ((input.Substring(0,2) == "ml") //check if substrings equal any of the commands
+						else if ((input.Length > 3) //TODO seperate input.length and if true run other code
+							&& (input.Substring(0,2) == "ml") //check if substrings equal any of the commands
 							|| (input.Substring(0,2) == "mr") //then remove user error by testing if theres a number
 							|| (input.Substring(0,2) == "mu") //by trying to convert last char/s to int
 							|| (input.Substring(0,2) == "md") //then runs the command if theyre equal to any command
-							&& (input.Length > 3)) { //move left
+							) { //move left
 							tempBool = Int32.TryParse(input.Substring(3), out tempInt);
 							if (tempBool == true){
 								for (int x = 0; x < Convert.ToInt32(input.Substring(3)); x++){
